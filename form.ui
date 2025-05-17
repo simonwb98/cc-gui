@@ -6,20 +6,94 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>1046</width>
+    <height>616</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
-  <widget class="QWidget" name="centralwidget"/>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QWidget" name="scanImageWidget" native="true">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>10</y>
+      <width>512</width>
+      <height>384</height>
+     </rect>
+    </property>
+    <property name="autoFillBackground">
+     <bool>false</bool>
+    </property>
+    <property name="styleSheet">
+     <string notr="true"/>
+    </property>
+   </widget>
+   <widget class="QWidget" name="correlationWidget" native="true">
+    <property name="geometry">
+     <rect>
+      <x>522</x>
+      <y>10</y>
+      <width>512</width>
+      <height>386</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QWidget" name="widget" native="true">
+    <property name="geometry">
+     <rect>
+      <x>10</x>
+      <y>404</y>
+      <width>271</width>
+      <height>81</height>
+     </rect>
+    </property>
+    <layout class="QGridLayout" name="gridLayout">
+     <item row="0" column="2">
+      <widget class="QLabel" name="gaussianLabel">
+       <property name="text">
+        <string>Gaussian sigma</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="3">
+      <widget class="QSlider" name="gaussianSlider">
+       <property name="maximum">
+        <number>5</number>
+       </property>
+       <property name="pageStep">
+        <number>2</number>
+       </property>
+       <property name="sliderPosition">
+        <number>0</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="invertedAppearance">
+        <bool>false</bool>
+       </property>
+       <property name="invertedControls">
+        <bool>false</bool>
+       </property>
+       <property name="tickPosition">
+        <enum>QSlider::TicksAbove</enum>
+       </property>
+       <property name="tickInterval">
+        <number>1</number>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </widget>
+  </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>1046</width>
      <height>37</height>
     </rect>
    </property>
@@ -30,9 +104,45 @@
     <addaction name="actionOpen_File"/>
     <addaction name="actionExit"/>
    </widget>
+   <widget class="QMenu" name="menuAnalysis">
+    <property name="title">
+     <string>Analysis</string>
+    </property>
+    <widget class="QMenu" name="menuDefine_ROI">
+     <property name="title">
+      <string>Define ROI</string>
+     </property>
+     <addaction name="actionRectangularROI"/>
+     <addaction name="actionEllipsoidalROI"/>
+    </widget>
+    <addaction name="menuDefine_ROI"/>
+    <addaction name="actionPerform_Cross_Correlation"/>
+    <addaction name="actionRevert_to_Original"/>
+   </widget>
+   <widget class="QMenu" name="menuMotivation">
+    <property name="title">
+     <string>Motivation</string>
+    </property>
+    <addaction name="actionPlay_GDR_worker_s_songs"/>
+   </widget>
+   <widget class="QMenu" name="menuDownload_Virus">
+    <property name="title">
+     <string>Download Virus</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>Edit</string>
+    </property>
+    <addaction name="actionUndo"/>
+    <addaction name="actionRevert_to_Original_2"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuEdit"/>
+   <addaction name="menuAnalysis"/>
+   <addaction name="menuMotivation"/>
+   <addaction name="menuDownload_Virus"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
   <action name="actionOpen_File">
    <property name="text">
     <string>Open File</string>
@@ -44,6 +154,41 @@
   <action name="actionExit">
    <property name="text">
     <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionPerform_Cross_Correlation">
+   <property name="text">
+    <string>Perform Cross-Correlation</string>
+   </property>
+  </action>
+  <action name="actionRectangularROI">
+   <property name="text">
+    <string>Rectangular</string>
+   </property>
+  </action>
+  <action name="actionPlay_GDR_worker_s_songs">
+   <property name="text">
+    <string>Play GDR worker's songs</string>
+   </property>
+  </action>
+  <action name="actionEllipsoidalROI">
+   <property name="text">
+    <string>Ellipsoidal</string>
+   </property>
+  </action>
+  <action name="actionRevert_to_Original">
+   <property name="text">
+    <string>Revert to Original</string>
+   </property>
+  </action>
+  <action name="actionUndo">
+   <property name="text">
+    <string>Undo</string>
+   </property>
+  </action>
+  <action name="actionRevert_to_Original_2">
+   <property name="text">
+    <string>Revert to Original</string>
    </property>
   </action>
  </widget>

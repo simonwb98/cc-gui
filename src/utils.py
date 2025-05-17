@@ -33,3 +33,16 @@ def open_int_file(file_path):
     ).astype(np.uint8)
 
     return image_array
+
+def play_gdr_song():
+    import webbrowser 
+    from random import choice
+    # open youtube link
+    songs = [        
+        "https://youtu.be/la9uHQdFv2U?si=TWJ5VQxdKps9RpCk",
+        "https://youtu.be/2flpdqGfAsw?si=FpXoJrBsqAw6aufH",
+        "https://youtu.be/61B2oN5tV3M?si=RSXaXFUhfC0Sp4BG",
+        "https://youtu.be/oopGFXItVyg?si=6X3RyKh9cTBvTDV5",
+        "https://youtu.be/3_o9HkYCtQs?si=1JZP5VSn9b2eyox_"
+    ]
+    webbrowser.open(choice(songs))
