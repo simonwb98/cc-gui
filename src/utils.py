@@ -1,6 +1,9 @@
-import struct
-import numpy as np
 import math
+import struct
+
+import numpy as np
+from PyQt5.QtGui import QImage
+
 
 # Function to read and process the .int file
 def open_int_file(file_path):
@@ -34,15 +37,28 @@ def open_int_file(file_path):
 
     return image_array
 
+
+def ndarray_to_qimage(arr):
+    # Scale floats to 0-255:
+    arr = np.ascontiguousarray(arr.T)
+    if arr.dtype != np.uint8:
+        arr = arr.astype(np.float32)
+        arr = 255 * (arr - arr.min()) / (np.ptp(arr) if np.ptp(arr) > 0 else 1)
+        arr = arr.astype(np.uint8)
+    h, w = arr.shape
+    return QImage(arr.data, w, h, w, QImage.Format_Grayscale8).copy()
+
+
 def play_gdr_song():
-    import webbrowser 
+    import webbrowser
     from random import choice
+
     # open youtube link
-    songs = [        
+    songs = [
         "https://youtu.be/la9uHQdFv2U?si=TWJ5VQxdKps9RpCk",
         "https://youtu.be/2flpdqGfAsw?si=FpXoJrBsqAw6aufH",
         "https://youtu.be/61B2oN5tV3M?si=RSXaXFUhfC0Sp4BG",
         "https://youtu.be/oopGFXItVyg?si=6X3RyKh9cTBvTDV5",
-        "https://youtu.be/3_o9HkYCtQs?si=1JZP5VSn9b2eyox_"
+        "https://youtu.be/3_o9HkYCtQs?si=1JZP5VSn9b2eyox_",
     ]
     webbrowser.open(choice(songs))

@@ -1,26 +1,29 @@
 import sys
 import numpy as np
 from scipy.ndimage import gaussian_filter
+import imageio
+from skimage.feature import match_template
 
 import pyqtgraph as pg
-from PyQt5 import uic, QtCore
+from PyQt5 import uic, QtCore, QtGui
 from PyQt5.QtWidgets import QFileDialog
 from pyqtgraph.Qt import QtWidgets
 
-from src.utils import open_int_file
+from src.utils import open_int_file, ndarray_to_qimage
 
-class CrossCorrelationWorker(QtCore.QThread):
-    resultReady = QtCore.pyqtSignal(np.ndarray) # Signal to emit the result
 
-    def __init__(self, image, template):
-        super().__init__()
-        self.image = image
-        self.template = template
+class CrossCorrelationWorker(QtCore.QObject):
+    resultReady = QtCore.pyqtSignal(np.ndarray)
 
-    def loop(self):
+    @QtCore.pyqtSlot(np.ndarray, np.ndarray)
+    def do_correlation(self, image, template):
         from scipy.signal import correlate2d
-        result = correlate2d(self.image, self.template, mode='same')
-        self.resultReady.emit(result)  # Emit the result
+        try:
+            result = correlate2d(image, template, mode='same', boundary='symm')
+        except Exception as e:
+            print("correlate2d failed:", e)
+            result = np.zeros_like(image)
+        self.resultReady.emit(result)
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -28,10 +31,11 @@ class MainWindow(QtWidgets.QMainWindow):
         uic.loadUi("form.ui", self)
         self.setWindowTitle("A Cunty Cross-Correlator")
         self.roi = None
+        self.template = None
 
         self.actionOpen_File.triggered.connect(self.load_image)
         self.actionPerform_Cross_Correlation.triggered.connect(self.perform_cross_correlation)
-        
+
         self.actionRectangularROI.triggered.connect(self.show_roi)
         self.actionEllipsoidalROI.triggered.connect(self.show_roi)
         self.gaussianSlider.valueChanged.connect(self.update_image)
@@ -42,10 +46,20 @@ class MainWindow(QtWidgets.QMainWindow):
         self.scanImageWidget.layout().addWidget(self.scanView) if self.scanImageWidget.layout() else self.scanImageWidget.setLayout(pg.QtWidgets.QVBoxLayout())
         self.scanImageWidget.layout().addWidget(self.scanView)
 
+        # set up template image widget
+        self.templateView = self.templateLabel
+
         self.crossCorrelationView = pg.ImageView()
         self.correlationWidget.layout().addWidget(self.crossCorrelationView) if self.correlationWidget.layout() else self.correlationWidget.setLayout(pg.QtWidgets.QVBoxLayout())
         self.correlationWidget.layout().addWidget(self.crossCorrelationView)
-        self.crossCorrelationWorker = None
+
+        # Worker thread 
+        self.correlationThread = QtCore.QThread()
+        self.crossCorrelationWorker = CrossCorrelationWorker()
+        self.crossCorrelationWorker.moveToThread(self.correlationThread)
+        self.crossCorrelationWorker.resultReady.connect(self.display_cross_correlation)
+        self.correlationThread.start()
+
 
     @QtCore.pyqtSlot()
     def show_roi(self):
@@ -62,39 +76,66 @@ class MainWindow(QtWidgets.QMainWindow):
             pass
 
         self.scanView.addItem(self.roi)
-        self.roi.sigRegionChanged.connect(self.update_roi)
+        self.roi.sigRegionChanged.connect(self.update_template_preview)
+        self.roi.sigRegionChangeFinished.connect(self.update_cross_correlation)
 
     @QtCore.pyqtSlot()
-    def update_roi(self):
-        roi_state = self.roi.getArraySlice(self.data, self.imageview.imageItem)
-        roi_data = roi_state[0]
-        print("ROI data shape:", roi_data.shape)
+    def update_template_preview(self):
+        roi_data = self.roi.getArrayRegion(self.processedImage, self.scanView.imageItem)
+        if hasattr(roi_data, 'filled'):
+            roi_data = roi_data.filled(0)
+        # Update templateLabel only
+        qimg = ndarray_to_qimage(roi_data)
+        widget_width = self.templateLabel.width()
+        widget_height = self.templateLabel.height()
+        pixmap = QtGui.QPixmap.fromImage(qimg)
+        scaled_pixmap = pixmap.scaled(
+            widget_width,
+            widget_height,
+            QtCore.Qt.KeepAspectRatio,
+            QtCore.Qt.SmoothTransformation
+        )
+        self.templateLabel.setPixmap(scaled_pixmap)
+        self.template = roi_data  # Optionally keep current template for later
+
+    @QtCore.pyqtSlot()
+    def update_cross_correlation(self):
+        # Get the most recent template if you haven't already
+        template = self.template
+        if template is None:
+            # Or, re-extract as in the preview function if you prefer
+            template = self.roi.getArrayRegion(self.processedImage, self.scanView.imageItem)
+            if hasattr(template, 'filled'):
+                template = template.filled(0)
+
+        # Start worker job as before...
+        image = self.processedImage.copy()
+        template = template.copy()
+        QtCore.QMetaObject.invokeMethod(
+            self.crossCorrelationWorker,
+            "do_correlation",
+            QtCore.Qt.QueuedConnection,
+            QtCore.Q_ARG(np.ndarray, image),
+            QtCore.Q_ARG(np.ndarray, template)
+        )
 
     @QtCore.pyqtSlot()
     def load_image(self):
         options = QFileDialog.Options()
         filename, _ = QFileDialog.getOpenFileName(
-            self,
-            "Open Image or Binary File",
-            "",
-            "Binary Files (*.int);;Images (*.png *.jpg *.bmp *.tif *.tiff);;All Files (*)",
-            options=options,
-        )
+            self, "Open Image or Binary File", "", 
+            "Binary Files (*.int);;Images (*.png *.jpg *.bmp *.tif *.tiff);;All Files (*)", options=options)
         if filename:
-            # write up support for other file formats.
-            image = (
-                pg.imread(filename) if hasattr(pg, "imread") else self.imread(filename)
-            )
+            if filename.endswith(".int"):
+                image = open_int_file(filename).T
+            else:
+                image = imageio.imread(filename)
+
             self.originalImage = image
             self.processedImage = image
             self.scanView.setImage(self.processedImage)
-
-    def imread(self, filename):
-        if filename.endswith(".int"):
-            image = open_int_file(filename)
-            return image.T
         else:
-            raise ValueError("Unsupported file format. Only .int files are supported.")
+            print("Illegal file format.")
         
     @QtCore.pyqtSlot()
     def update_image(self):
@@ -102,12 +143,31 @@ class MainWindow(QtWidgets.QMainWindow):
         if self.scanView.image is not None:
             gaussian_value = self.gaussianSlider.value()
             # apply Gaussian filter
-            self.processed_image = gaussian_filter(self.originalImage, sigma=gaussian_value)
+            self.processedImage = gaussian_filter(self.originalImage, sigma=gaussian_value)
             # space for other processing
 
-            self.scanView.setImage(self.processed_image)
+            self.scanView.setImage(self.processedImage)
         else:
             print("Whoa there, buddy! No image loaded to update.")
+
+    @QtCore.pyqtSlot()
+    def perform_cross_correlation(self):
+        if self.roi is None:
+            print("No ROI selected!")
+            return
+
+        self.template = self.roi.getArrayRegion(self.processedImage, self.scanView.imageItem)
+
+
+    @QtCore.pyqtSlot(np.ndarray)
+    def display_cross_correlation(self, cc_result):
+        # This is called in the main (GUI) thread automatically
+        self.crossCorrelationView.setImage(cc_result)
+
+    def closeEvent(self, event):
+        self.correlationThread.quit()
+        self.correlationThread.wait()
+        event.accept()
     
         
     @QtCore.pyqtSlot()
