@@ -25,6 +25,9 @@ class CrossCorrelationWorker(QtCore.QObject):
             result = np.zeros_like(image)
         self.resultReady.emit(result)
 
+
+    
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
@@ -39,6 +42,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.actionRectangularROI.triggered.connect(self.show_roi)
         self.actionEllipsoidalROI.triggered.connect(self.show_roi)
         self.gaussianSlider.valueChanged.connect(self.update_image)
+        self.matchesSlider.valueChanged.connect(self.on_match_count_changed)
         self.actionPlay_GDR_worker_s_songs.triggered.connect(self.play_gdr_songs)
 
         # need to set up scan widget and cross-correlation widget
@@ -59,6 +63,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.crossCorrelationWorker.moveToThread(self.correlationThread)
         self.crossCorrelationWorker.resultReady.connect(self.display_cross_correlation)
         self.correlationThread.start()
+
+        self.num_matches = self.matchesSlider.value()
+        self.match_rects = []
 
 
     @QtCore.pyqtSlot()
@@ -103,12 +110,10 @@ class MainWindow(QtWidgets.QMainWindow):
         # Get the most recent template if you haven't already
         template = self.template
         if template is None:
-            # Or, re-extract as in the preview function if you prefer
             template = self.roi.getArrayRegion(self.processedImage, self.scanView.imageItem)
             if hasattr(template, 'filled'):
                 template = template.filled(0)
 
-        # Start worker job as before...
         image = self.processedImage.copy()
         template = template.copy()
         QtCore.QMetaObject.invokeMethod(
@@ -161,8 +166,54 @@ class MainWindow(QtWidgets.QMainWindow):
 
     @QtCore.pyqtSlot(np.ndarray)
     def display_cross_correlation(self, cc_result):
-        # This is called in the main (GUI) thread automatically
-        self.crossCorrelationView.setImage(cc_result)
+        self.last_cc_result = cc_result  # cache cc result for re-use
+        self.crossCorrelationView.setImage(self.processedImage, autoLevels=True)
+
+        if hasattr(self, "match_rects"):
+            for rect in self.match_rects:
+                self.crossCorrelationView.removeItem(rect)
+        else:
+            self.match_rects = []
+
+        w = self.roi.size().x()
+        h = self.roi.size().y()
+
+        # Find indices of top matches
+        flat_indices = np.argpartition(cc_result.ravel(), -self.num_matches)[-self.num_matches:]
+        coords = np.array(np.unravel_index(flat_indices, cc_result.shape)).T  # shape (N, 2)
+
+        # Sort coords by descending correlation value for nicer visualization
+        scores = cc_result[coords[:, 0], coords[:, 1]]
+        sorted_indices = np.argsort(scores)[::-1]
+        coords = coords[sorted_indices]
+
+        for y, x in coords:
+            x_top_left = y - w / 2  # your coordinate order; adjust if needed
+            y_top_left = x - h / 2
+
+            rect = pg.RectROI(
+                [x_top_left, y_top_left],
+                [w, h],
+                pen='g',
+                movable=False,
+                rotatable=False,
+                resizable=False
+            )
+            self.crossCorrelationView.addItem(rect)
+            self.match_rects.append(rect)
+
+    @QtCore.pyqtSlot(int)
+    def on_match_count_changed(self, value):
+        self.num_matches = value
+        if hasattr(self, "last_cc_result"):
+            self.display_cross_correlation(self.last_cc_result)
+        
+        # to be updated later
+        if hasattr(self, "last_stacked_cc"):
+            pass
+
+
+
 
     def closeEvent(self, event):
         self.correlationThread.quit()

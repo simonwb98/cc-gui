@@ -40,7 +40,7 @@
      </rect>
     </property>
    </widget>
-   <widget class="QWidget" name="widget" native="true">
+   <widget class="QWidget" name="processingWidget" native="true">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -50,7 +50,7 @@
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout">
-     <item row="0" column="2">
+     <item row="0" column="0">
       <widget class="QLabel" name="gaussianLabel">
        <property name="text">
         <string>Gaussian sigma</string>
@@ -97,8 +97,67 @@
      </rect>
     </property>
     <property name="text">
-     <string>TextLabel</string>
+     <string>Template</string>
     </property>
+    <property name="scaledContents">
+     <bool>false</bool>
+    </property>
+    <property name="alignment">
+     <set>Qt::AlignCenter</set>
+    </property>
+   </widget>
+   <widget class="QWidget" name="resultWidget" native="true">
+    <property name="geometry">
+     <rect>
+      <x>580</x>
+      <y>404</y>
+      <width>271</width>
+      <height>81</height>
+     </rect>
+    </property>
+    <layout class="QGridLayout" name="gridLayout_2">
+     <item row="0" column="0">
+      <widget class="QLabel" name="matchesLabel">
+       <property name="text">
+        <string># Matches</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="3">
+      <widget class="QSlider" name="matchesSlider">
+       <property name="minimum">
+        <number>1</number>
+       </property>
+       <property name="maximum">
+        <number>30</number>
+       </property>
+       <property name="pageStep">
+        <number>5</number>
+       </property>
+       <property name="value">
+        <number>5</number>
+       </property>
+       <property name="sliderPosition">
+        <number>5</number>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="invertedAppearance">
+        <bool>false</bool>
+       </property>
+       <property name="invertedControls">
+        <bool>false</bool>
+       </property>
+       <property name="tickPosition">
+        <enum>QSlider::TicksAbove</enum>
+       </property>
+       <property name="tickInterval">
+        <number>2</number>
+       </property>
+      </widget>
+     </item>
+    </layout>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -138,11 +197,6 @@
     </property>
     <addaction name="actionPlay_GDR_worker_s_songs"/>
    </widget>
-   <widget class="QMenu" name="menuDownload_Virus">
-    <property name="title">
-     <string>Download Virus</string>
-    </property>
-   </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
      <string>Edit</string>
@@ -154,7 +208,6 @@
    <addaction name="menuEdit"/>
    <addaction name="menuAnalysis"/>
    <addaction name="menuMotivation"/>
-   <addaction name="menuDownload_Virus"/>
   </widget>
   <action name="actionOpen_File">
    <property name="text">
