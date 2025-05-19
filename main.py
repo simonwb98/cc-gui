@@ -2,7 +2,6 @@ import sys
 import numpy as np
 from scipy.ndimage import gaussian_filter
 import imageio
-from skimage.feature import match_template
 
 import pyqtgraph as pg
 from PyQt5 import uic, QtCore, QtGui
@@ -19,7 +18,8 @@ class CrossCorrelationWorker(QtCore.QObject):
     def do_correlation(self, image, template):
         from scipy.signal import correlate2d
         try:
-            result = correlate2d(image, template, mode='same', boundary='symm')
+            template -= template.mean()
+            result = correlate2d(image, template, mode='same', boundary="symm")
         except Exception as e:
             print("correlate2d failed:", e)
             result = np.zeros_like(image)
