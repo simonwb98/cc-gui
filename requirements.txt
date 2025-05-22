@@ -1,16 +1,3 @@
-Packages to install:
-numpy
-scipy
-matplotlib
-networkx
-scikit-image
-pyqtgraph
-pillow
-imageio
-PyQt5
-
-All packages:
-___
 appnope==0.1.4
 asttokens==3.0.0
 comm==0.2.2
