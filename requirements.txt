@@ -1,3 +1,14 @@
+##### Requirements without version specifics #####
+numpy
+scipy
+matplotlib
+imageio
+pyqt
+pyqtgraph
+scikit-images
+pillow
+#
+##### All #####
 appnope==0.1.4
 asttokens==3.0.0
 comm==0.2.2
